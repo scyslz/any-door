@@ -4,6 +4,7 @@ import io.github.lgp547.anydoor.common.dto.AnyDoorRunDto;
 import io.github.lgp547.anydoor.common.util.AnyDoorClassUtil;
 import io.github.lgp547.anydoor.common.util.AnyDoorClassloader;
 import io.github.lgp547.anydoor.common.util.AnyDoorFileUtil;
+import io.github.lgp547.anydoor.common.util.AnyDoorSpringUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +52,8 @@ public class AnyDoorAttach {
             Class<?> clazz = AnyDoorClassUtil.forName(anyDoorRunDto.getClassName());
             Method method = AnyDoorClassUtil.getMethod(clazz, anyDoorRunDto.getMethodName(), anyDoorRunDto.getParameterTypes());
             Object instance = AnyDoorVmToolUtils.getInstance(clazz, !Modifier.isPublic(method.getModifiers()));
+
+            anyDoorClassloader.setSpringLoader(AnyDoorSpringUtil.getSpringLoader());
 
             Class<?> anyDoorServiceClass = anyDoorClassloader.loadClass("io.github.lgp547.anydoor.core.AnyDoorService");
             Object anyDoorService = anyDoorServiceClass.getConstructor().newInstance();

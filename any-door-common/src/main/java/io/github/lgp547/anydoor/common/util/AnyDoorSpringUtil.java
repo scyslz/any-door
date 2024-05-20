@@ -6,6 +6,7 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.lang.Nullable;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 public class AnyDoorSpringUtil {
 
     private static List<ApplicationContext> applicationContextList;
-
+    private static ClassLoader springLoader;
     private static Supplier<ApplicationContext[]> applicationContextsSupplier;
     private static Supplier<BeanFactory[]> beanFactorySupplier;
 
@@ -49,8 +50,41 @@ public class AnyDoorSpringUtil {
         for (ApplicationContext applicationContext : applicationContextList) {
             if (applicationContext instanceof DefaultResourceLoader) {
                 ((DefaultResourceLoader) applicationContext).setClassLoader(applicationContext.getClassLoader());
+                ClassLoader defaultClassLoader = getDefaultClassLoader();
+                if(defaultClassLoader instanceof  AnyDoorClassloader){
+                    ((AnyDoorClassloader) defaultClassLoader).setSpringLoader(applicationContext.getClassLoader());
+                    springLoader = applicationContext.getClassLoader();
+                }
             }
         }
+    }
+
+    public static ClassLoader getSpringLoader() {
+        return springLoader;
+    }
+
+    public static ClassLoader getDefaultClassLoader() {
+        ClassLoader cl = null;
+        try {
+            cl = Thread.currentThread().getContextClassLoader();
+        }
+        catch (Throwable ex) {
+            // Cannot access thread context ClassLoader - falling back...
+        }
+        if (cl == null) {
+            // No thread context class loader -> use class loader of this class.
+            cl = ClassUtils.class.getClassLoader();
+            if (cl == null) {
+                // getClassLoader() returning null indicates the bootstrap ClassLoader
+                try {
+                    cl = ClassLoader.getSystemClassLoader();
+                }
+                catch (Throwable ex) {
+                    // Cannot access system ClassLoader - oh well, maybe the caller can live with null...
+                }
+            }
+        }
+        return cl;
     }
 
     private static List<ApplicationContext> sortList(List<ApplicationContext> curApplicationContextList) {
