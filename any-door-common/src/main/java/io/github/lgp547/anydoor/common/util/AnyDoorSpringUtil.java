@@ -6,7 +6,6 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.lang.Nullable;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -48,13 +47,12 @@ public class AnyDoorSpringUtil {
      */
     private static void setClassLoader() {
         for (ApplicationContext applicationContext : applicationContextList) {
+            ClassLoader classLoader = applicationContext.getClassLoader();
+            if (classLoader != null) {
+                springLoader = classLoader;
+            }
             if (applicationContext instanceof DefaultResourceLoader) {
-                ((DefaultResourceLoader) applicationContext).setClassLoader(applicationContext.getClassLoader());
-                ClassLoader defaultClassLoader = getDefaultClassLoader();
-                if(defaultClassLoader instanceof  AnyDoorClassloader){
-                    ((AnyDoorClassloader) defaultClassLoader).setSpringLoader(applicationContext.getClassLoader());
-                    springLoader = applicationContext.getClassLoader();
-                }
+                ((DefaultResourceLoader) applicationContext).setClassLoader(classLoader);
             }
         }
     }
@@ -67,19 +65,17 @@ public class AnyDoorSpringUtil {
         ClassLoader cl = null;
         try {
             cl = Thread.currentThread().getContextClassLoader();
-        }
-        catch (Throwable ex) {
+        } catch (Throwable ex) {
             // Cannot access thread context ClassLoader - falling back...
         }
         if (cl == null) {
             // No thread context class loader -> use class loader of this class.
-            cl = ClassUtils.class.getClassLoader();
+            cl = AnyDoorSpringUtil.class.getClassLoader();
             if (cl == null) {
                 // getClassLoader() returning null indicates the bootstrap ClassLoader
                 try {
                     cl = ClassLoader.getSystemClassLoader();
-                }
-                catch (Throwable ex) {
+                } catch (Throwable ex) {
                     // Cannot access system ClassLoader - oh well, maybe the caller can live with null...
                 }
             }

@@ -11,8 +11,6 @@ public class AnyDoorClassloader extends URLClassLoader {
 
     private boolean end = false;
 
-    private ClassLoader springLoader;
-
     public AnyDoorClassloader(List<String> urls) throws Exception {
         super(getUrls(urls), ClassLoader.getSystemClassLoader().getParent());
     }
@@ -50,9 +48,12 @@ public class AnyDoorClassloader extends URLClassLoader {
         } catch (Exception e) {
             // ignore
         }
+        if (AnyDoorSpringUtil.getSpringLoader() != null) {
+            try {
+                return AnyDoorSpringUtil.getSpringLoader().loadClass(name);
+            } catch (Exception e) {
 
-        if(springLoader != null){
-            return springLoader.loadClass(name);
+            }
         }
         return super.loadClass(name, resolve);
     }
@@ -78,13 +79,6 @@ public class AnyDoorClassloader extends URLClassLoader {
 
     public void setEnd(boolean end) {
         this.end = end;
-    }
-
-    public void setSpringLoader(ClassLoader springLoader) {
-        if(springLoader == null){
-            return;
-        }
-        this.springLoader = springLoader;
     }
 
 

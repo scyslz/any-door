@@ -53,8 +53,6 @@ public class AnyDoorAttach {
             Method method = AnyDoorClassUtil.getMethod(clazz, anyDoorRunDto.getMethodName(), anyDoorRunDto.getParameterTypes());
             Object instance = AnyDoorVmToolUtils.getInstance(clazz, !Modifier.isPublic(method.getModifiers()));
 
-            anyDoorClassloader.setSpringLoader(AnyDoorSpringUtil.getSpringLoader());
-
             Class<?> anyDoorServiceClass = anyDoorClassloader.loadClass("io.github.lgp547.anydoor.core.AnyDoorService");
             Object anyDoorService = anyDoorServiceClass.getConstructor().newInstance();
             Method run = anyDoorServiceClass.getMethod("run", String.class, Method.class, Object.class, Runnable.class);
