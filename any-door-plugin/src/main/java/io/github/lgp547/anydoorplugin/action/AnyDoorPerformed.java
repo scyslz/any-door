@@ -2,6 +2,7 @@ package io.github.lgp547.anydoorplugin.action;
 
 import com.google.gson.JsonObject;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiMethod;
 import io.github.lgp547.anydoorplugin.AnyDoorInfo;
@@ -20,18 +21,22 @@ import io.github.lgp547.anydoorplugin.util.VmUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
- * 打开任意门，核心执行
+ *
  */
 public class AnyDoorPerformed {
 
     public void invoke(Project project, PsiMethod psiMethod, Runnable okAction) {
         PsiClass psiClass = (PsiClass) psiMethod.getParent();
-        String className = psiClass.getQualifiedName();
+        String className =  convertClassName(project, psiClass, psiMethod);
         String methodName = psiMethod.getName();
         List<String> paramTypeNameList = AnyDoorActionUtil.toParamTypeNameList(psiMethod.getParameterList());
 
@@ -75,6 +80,26 @@ public class AnyDoorPerformed {
         }
     }
 
+    private static String convertClassName(Project project, PsiClass psiClass, PsiMethod psiMethod) {
+        String clazz = psiClass.getQualifiedName();
+        try {
+            File file = new File(project.getBasePath() + "/.idea/AnyDoorExt.txt");
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            // String clzzz = AnyDoorFileUtil.getTextFileAsString(file);
+            Map<String, String> maps = FileUtil.loadLines(file)
+                    .stream()
+                    .map(e -> e.split("[=:]"))
+                    .filter(e -> e.length == 2)
+                    .collect(Collectors.toMap(e -> e[0], e -> e[1]));
+            return maps.getOrDefault(clazz, clazz);
+        } catch (IOException e) {
+
+        }
+        return clazz;
+    }
+
     public boolean useNewUI(AnyDoorSettingsState service, Project project, PsiClass psiClass, PsiMethod psiMethod, String cacheKey, Runnable okAction) {
         if (service.enableNewUI) {
             doUseNewUI(service, project, psiClass, psiMethod, cacheKey, okAction, null);
@@ -99,7 +124,7 @@ public class AnyDoorPerformed {
             if (psiClass.isInterface()) {
                 text = JsonUtil.transformedKey(text, AnyDoorActionUtil.getParamTypeNameTransformer(psiMethod.getParameterList()));
             }
-            String jsonDtoStr = getJsonDtoStr(psiClass.getQualifiedName(), psiMethod.getName(), AnyDoorActionUtil.toParamTypeNameList(psiMethod.getParameterList()), text, !service.enableAsyncExecute, paramCacheDto);
+            String jsonDtoStr = getJsonDtoStr(convertClassName(project, psiClass, psiMethod), psiMethod.getName(), AnyDoorActionUtil.toParamTypeNameList(psiMethod.getParameterList()), text, !service.enableAsyncExecute, paramCacheDto);
             openAnyDoor(project, jsonDtoStr, service, (url, e) -> NotifierUtil.notifyError(project, "call " + url + " error [ " + e.getMessage() + " ]"));
         });
         mainUI.show();
